@@ -1,0 +1,44 @@
+# Build directories
+build/
+Build/
+BUILD/
+
+# Generated files
+*.hex
+*.bin
+*.elf
+*.map
+*.lst
+
+# Object files
+*.o
+*.obj
+
+# Library files
+lib/
+
+# Debug files
+*.gdb
+*.dSYM/
+
+# IDE specific files
+.vscode/
+.idea/
+*.ioc
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Temporary files
+*~
+*.swp
+*.tmp
+
+# Log files
+*.log
+
+# HAL Library downloads
+STM32Cube_FW_*/
