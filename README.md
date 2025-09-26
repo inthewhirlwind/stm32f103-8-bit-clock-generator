@@ -49,7 +49,9 @@ A true quadrature square wave generator using an STM32F103C8T6 microcontroller t
 - **Main Loop**: Continuously monitors ADC and button states
 - **Timer Configuration**: TIM1 and TIM2 configured with phase shift for quadrature output
 - **Interrupt Handling**: Button debouncing using GPIO interrupts
-- **ADC Conversion**: Maps potentiometer position to frequency range
+- **ADC Conversion**: Maps potentiometer position to frequency range using segmented scaling
+  - First 20% of potentiometer travel: Linear scale from 1Hz to 100Hz
+  - Remaining 80% of potentiometer travel: Linear scale from 100Hz to 100kHz
 - **UART Reporting**: Periodic status transmission
 
 ## Build Instructions
@@ -101,17 +103,36 @@ openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -c "program stm32f103-
 1. **Power on** the STM32F103C8T6 board
 2. **Connect UART** at 115200 baud to monitor status
 3. **Adjust potentiometer** to change output frequency (1Hz - 100kHz)
+   - First 20% of potentiometer rotation: Fine control from 1Hz to 100Hz
+   - Remaining 80% of potentiometer rotation: Coarse control from 100Hz to 100kHz
 4. **Press enable button** to start quadrature output generation
 5. **Press disable button** to stop output generation
 6. **Monitor LED** for output status indication
+
+## Potentiometer Frequency Control
+
+The potentiometer input uses a segmented frequency mapping to provide both fine and coarse control:
+
+- **Low Frequency Range (First 20% of travel)**: 1Hz - 100Hz
+  - Provides fine-grained control for low frequency applications
+  - ADC values 0-819 (out of 4095) map linearly to this range
+  - Ideal for motor control, servo applications, and precision timing
+
+- **High Frequency Range (Remaining 80% of travel)**: 100Hz - 100kHz  
+  - Provides access to the full high frequency range
+  - ADC values 820-4095 map linearly to this range
+  - Suitable for PWM generation, clock signals, and high-speed applications
+
+This segmented approach ensures precise control at low frequencies while maintaining access to the full 100kHz range.
 
 ## UART Output Format
 
 The system sends status information every 500ms:
 ```
 STM32F103 Quadrature Generator v1.0
-ADC: 2048, Freq: 50250Hz, Output: ON
-ADC: 1024, Freq: 25000Hz, Output: ON
+Freq mapping - Min: 1Hz, 20%: 100Hz, Mid: 37577Hz, Max: 100000Hz
+ADC: 819, Freq: 100Hz, Output: ON
+ADC: 2048, Freq: 37577Hz, Output: ON
 ADC: 0, Freq: 1Hz, Output: OFF
 ```
 
