@@ -274,6 +274,8 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
+  // Configure channel B (TIM1_CH2) as inverse of channel A for true quadrature
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
@@ -337,6 +339,8 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
+  // Configure channel D (TIM2_CH4) as inverse of channel C for true quadrature
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -405,12 +409,12 @@ static void MX_GPIO_Init(void)
   * @param frequency: Target frequency in Hz (1Hz - 100kHz)
   * @retval None
   * 
-  * This function configures two timers (TIM1 and TIM2) to generate quadrature
+  * This function configures two timers (TIM1 and TIM2) to generate true quadrature
   * output signals:
-  * - TIM1 generates channels A & B (PA8, PA9)
-  * - TIM2 generates channels C & D (PA10, PA11) with 90° phase lead
+  * - TIM1 generates channels A & B (PA8, PA9) where B is inverted from A
+  * - TIM2 generates channels C & D (PA10, PA11) where D is inverted from C, with 90° phase lead
   * 
-  * Quadrature encoding provides directional information and higher resolution
+  * True quadrature encoding provides directional information and higher resolution
   * for rotary encoders and motor control applications.
   * 
   * The function dynamically calculates prescaler values to maintain optimal
@@ -465,13 +469,13 @@ static void Update_Frequency(uint32_t frequency)
   __HAL_TIM_SET_PRESCALER(&htim1, prescaler);
   __HAL_TIM_SET_AUTORELOAD(&htim1, period);
   __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);    // Channel A
-  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pulse);    // Channel B (same phase as A)
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pulse);    // Channel B (inverted polarity)
   
   // Update TIM2 configuration (channels C & D) with same timing parameters
   __HAL_TIM_SET_PRESCALER(&htim2, prescaler);
   __HAL_TIM_SET_AUTORELOAD(&htim2, period);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pulse);    // Channel C
-  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pulse);    // Channel D (same phase as C)
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pulse);    // Channel D (inverted polarity)
   
   // Restart timers if output is enabled
   if (output_enabled)
