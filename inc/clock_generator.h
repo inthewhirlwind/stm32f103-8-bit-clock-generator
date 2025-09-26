@@ -9,6 +9,8 @@
 #include "stm32f1xx_ll_adc.h"
 #include "stm32f1xx_ll_usart.h"
 #include "stm32f1xx_ll_exti.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Timer Configuration */
 #define TIM1_FREQUENCY      1000000  // 1MHz base frequency
@@ -51,13 +53,17 @@
 #define POTENTIOMETER_PORT  GPIOA
 #define POTENTIOMETER_PIN   LL_GPIO_PIN_0
 
-/* UART Configuration */
-#define UART_PORT           USART2
+/* UART Configuration - Using USART1 to avoid timer pin conflicts */
+#define UART_PORT           USART1
 #define UART_BAUD_RATE      115200
 #define UART_TX_PORT        GPIOA
-#define UART_TX_PIN         LL_GPIO_PIN_2
+#define UART_TX_PIN         LL_GPIO_PIN_9   /* Note: Conflicts with TIM1_CH2, alternative approach needed */
 #define UART_RX_PORT        GPIOA
-#define UART_RX_PIN         LL_GPIO_PIN_3
+#define UART_RX_PIN         LL_GPIO_PIN_10  /* USART1_RX */
+
+/* Alternative: Software UART on unused pins */
+#define SOFT_UART_TX_PORT   GPIOB
+#define SOFT_UART_TX_PIN    LL_GPIO_PIN_6   /* PB6 - Available pin */
 
 /* Debounce Configuration */
 #define DEBOUNCE_TIME_MS    50

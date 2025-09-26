@@ -1,5 +1,6 @@
 #include "clock_generator.h"
 #include "stm32f1xx_ll_utils.h"
+#include <stdlib.h>
 
 /* External system state - declare it but it's defined in clock_generator.c */
 /* extern system_state_t g_system_state; */
@@ -25,7 +26,9 @@ int main(void)
 {
     uint16_t last_adc_value = 0;
     uint32_t adc_update_counter = 0;
-    const uint32_t ADC_UPDATE_INTERVAL = 100;  // Update frequency every 100 main loops
+    uint32_t uart_update_counter = 0;
+    const uint32_t ADC_UPDATE_INTERVAL = 100;   // Update frequency every 100 main loops
+    const uint32_t UART_UPDATE_INTERVAL = 1000; // Send UART status every 1000 main loops (~1s)
     
     /* Initialize the complete clock generator system */
     ClockGenerator_Init();
@@ -48,10 +51,20 @@ int main(void)
                 uint32_t new_frequency = ADC_ValueToFrequency(current_adc);
                 ClockGenerator_SetFrequency(new_frequency);
                 
-                /* Update system state - access through function calls
+                /* Update internal system state (through direct access for now) */
+                extern system_state_t g_system_state;
                 g_system_state.adc_value = current_adc;
-                g_system_state.current_frequency = new_frequency; */
+                g_system_state.current_frequency = new_frequency;
             }
+        }
+        
+        /* Send UART status periodically */
+        if (++uart_update_counter >= UART_UPDATE_INTERVAL) {
+            uart_update_counter = 0;
+            
+            /* Send current status via UART */
+            extern system_state_t g_system_state;
+            UART_SendStatus(&g_system_state);
         }
         
         /* Small delay to prevent excessive CPU usage */

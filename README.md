@@ -16,7 +16,7 @@ A comprehensive 8-bit microprocessor quadrature clock generator using an STM32F1
 - **🎛️ Potentiometer Control**: Analog frequency adjustment (10Hz - 1kHz)
 - **🔘 Button Interface**: Hardware interrupt-driven enable/disable controls
 - **💡 Status LED**: Visual indication of output state
-- **📡 UART Ready**: Framework for real-time system monitoring
+- **📡 UART Output**: Real-time status monitoring at 115200 baud (PB6)
 - **⚡ Hardware PWM**: Low jitter, precise timing generation
 - **🔄 90° Phase Shift**: True quadrature output for 8-bit systems
 
@@ -41,6 +41,7 @@ A comprehensive 8-bit microprocessor quadrature clock generator using an STM32F1
 | GPIO_IN | PA12 | Enable Button | Pull-up | Start generation |
 | GPIO_IN | PA15 | Disable Button | Pull-up | Stop generation |
 | GPIO_OUT | PC13 | Status LED | Active Low | State indicator |
+| GPIO_OUT | PB6 | UART TX | Software | Status output (115200 baud) |
 
 ## Signal Behavior
 
@@ -102,7 +103,7 @@ make run_tests
 4. **Power On**: System initializes with outputs disabled
 5. **Enable Output**: Press enable button to start quadrature generation
 6. **Adjust Frequency**: Turn potentiometer to change frequency (10Hz - 1kHz)
-7. **Monitor Status**: LED indicates when outputs are active
+7. **Monitor Status**: LED indicates when outputs are active, UART provides real-time status
 8. **Disable Output**: Press disable button to stop generation
 
 ## Applications

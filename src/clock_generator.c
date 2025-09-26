@@ -229,18 +229,21 @@ void Buttons_Init(void)
 }
 
 /**
- * @brief UART Initialization for status output
+ * @brief Software UART Initialization for status output
+ * Uses bit-banging on PB6 to avoid timer pin conflicts
  */
 void UART_Init(void)
 {
-    /* Enable UART clock */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
+    /* Enable GPIOB clock for software UART */
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
     
-    /* Configure UART pins - NOTE: These conflict with timer pins, using different pins */
-    /* TX: PA2 is used by TIM2_CH3, using different approach for UART */
-    /* For now, disable UART to avoid conflicts - can be implemented with different pins */
+    /* Configure software UART TX pin (PB6) */
+    LL_GPIO_SetPinMode(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinSpeed(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinOutputType(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     
-    /* TODO: Implement UART on different pins or use software UART */
+    /* Set TX line high (idle state) */
+    LL_GPIO_SetOutputPin(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN);
 }
 
 /**
@@ -256,15 +259,25 @@ void ClockGenerator_Init(void)
     
     /* Initialize hardware */
     SystemClock_Config();
+    
+    /* Enable DWT for precise timing in software UART */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    DWT->CYCCNT = 0;
+    
     GPIO_Init();
     Timer1_Init();
     Timer2_Init();
     ADC_Init();
     StatusLED_Init();
     Buttons_Init();
+    UART_Init();
     
     /* Set initial frequency */
     ClockGenerator_SetFrequency(DEFAULT_FREQ);
+    
+    /* Send startup message */
+    UART_SendString("STM32F103 Clock Generator Initialized\r\n");
 }
 
 /**
@@ -386,18 +399,64 @@ void StatusLED_Off(void)
 }
 
 /**
- * @brief UART functions (simplified for now)
+ * @brief Software UART bit timing - 115200 baud @ 72MHz
+ */
+#define UART_BIT_TIME_CYCLES    (SystemCoreClock / UART_BAUD_RATE)
+
+/**
+ * @brief Send a single byte via software UART
+ */
+static void SoftUART_SendByte(uint8_t byte)
+{
+    uint32_t start_time;
+    
+    /* Start bit (low) */
+    LL_GPIO_ResetOutputPin(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN);
+    start_time = DWT->CYCCNT;
+    while ((DWT->CYCCNT - start_time) < UART_BIT_TIME_CYCLES);
+    
+    /* Data bits (LSB first) */
+    for (int i = 0; i < 8; i++) {
+        if (byte & (1 << i)) {
+            LL_GPIO_SetOutputPin(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN);
+        } else {
+            LL_GPIO_ResetOutputPin(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN);
+        }
+        start_time = DWT->CYCCNT;
+        while ((DWT->CYCCNT - start_time) < UART_BIT_TIME_CYCLES);
+    }
+    
+    /* Stop bit (high) */
+    LL_GPIO_SetOutputPin(SOFT_UART_TX_PORT, SOFT_UART_TX_PIN);
+    start_time = DWT->CYCCNT;
+    while ((DWT->CYCCNT - start_time) < UART_BIT_TIME_CYCLES);
+}
+
+/**
+ * @brief Send string via software UART
  */
 void UART_SendString(const char* str)
 {
-    /* TODO: Implement UART transmission */
-    (void)str;  // Suppress unused parameter warning
+    while (*str) {
+        SoftUART_SendByte(*str++);
+    }
 }
 
+/**
+ * @brief Send formatted status via UART
+ */
 void UART_SendStatus(const system_state_t* state)
 {
-    /* TODO: Implement status transmission */
-    (void)state;  // Suppress unused parameter warning
+    char buffer[100];
+    
+    /* Format status string */
+    snprintf(buffer, sizeof(buffer), 
+             "Status: %s, Freq: %luHz, ADC: %u\r\n",
+             state->output_enabled ? "ON" : "OFF",
+             state->current_frequency,
+             state->adc_value);
+    
+    UART_SendString(buffer);
 }
 
 /**
