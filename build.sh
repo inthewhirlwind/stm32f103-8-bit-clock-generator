@@ -62,7 +62,7 @@ arm-none-eabi-size stm32f103-clock-generator.elf
 echo ""
 echo "Generated Files:"
 echo "================"
-ls -la *.elf *.hex *.bin *.map | awk '{print $9, $5" bytes"}'
+ls -la *.elf *.hex *.bin *.map 2>/dev/null | awk '{print $9, $5" bytes"}' || echo "Error: Build artifacts not found"
 
 echo ""
 echo "Build completed successfully!"
