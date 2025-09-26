@@ -1,0 +1,36 @@
+# Build artifacts
+build/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+
+# Test executables
+tests/test_inverse_polarity
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Compiler generated files
+*.i
+*.ii
+*.s
+*.su
+
+# Debugging files
+*.gdb
+*.dSYM/
