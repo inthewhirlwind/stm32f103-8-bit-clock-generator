@@ -128,6 +128,43 @@ ADC: 0, Freq: 1Hz, Output: OFF
 - **Resolution**: Variable resolution based on frequency range (optimal timer utilization)
 - **Timing Accuracy**: Hardware PWM ensures precise timing and low jitter
 
+### Quadrature Waveform Diagram
+
+The following diagram illustrates the timing relationship between all four output channels:
+
+```
+Time →  0°      90°     180°    270°    360°    450°    540°    630°    720°
+        │       │       │       │       │       │       │       │       │
+
+CH A ── ┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐       ┌──
+(PA8)   │       │       │       │       │       │       │       │       │
+     ───┘       └───────┘       └───────┘       └───────┘       └───────┘
+
+CH B ───────────┐       ┌───────┐       ┌───────┐       ┌───────┐       ┌
+(PA9)           │       │       │       │       │       │       │       │
+     ───────────┘       └───────┘       └───────┘       └───────┘       └
+
+CH C ───────┌───────┐       ┌───────┐       ┌───────┐       ┌───────┐    
+(PA10)      │       │       │       │       │       │       │       │    
+     ───────┘       └───────┘       └───────┘       └───────┘       └────
+
+CH D ───────────────┐       ┌───────┐       ┌───────┐       ┌───────┐    
+(PA11)              │       │       │       │       │       │       │    
+     ───────────────┘       └───────┘       └───────┘       └───────┘    
+
+Legend:
+  • CH A & B: TIM1 channels (PA8, PA9) - B is inverted from A (180° phase difference)
+  • CH C & D: TIM2 channels (PA10, PA11) - D is inverted from C (180° phase difference)
+  • Phase Relationship: C & D lead A & B by 90° (quarter cycle advance)
+  • All channels: 50% duty cycle, synchronized start/stop control
+```
+
+**Key Timing Characteristics:**
+- **90° Phase Lead**: Channels C & D start 90° ahead of A & B
+- **Inverse Pairs**: B is inverted from A, D is inverted from C
+- **True Quadrature**: Provides directional encoding capability
+- **Synchronized Operation**: All channels start/stop together when enabled/disabled
+
 ### Dynamic Frequency Scaling
 
 The system automatically adjusts timer prescaler values to maintain optimal resolution across the wide frequency range:
