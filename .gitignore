@@ -1,0 +1,20 @@
+# Build outputs
+build/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.d
+
+# IDE files
+.vscode/
+*.ioc
+.metadata/
+.settings/
+
+# Temporary files
+*~
+*.tmp
+*.swp
