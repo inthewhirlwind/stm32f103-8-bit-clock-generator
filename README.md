@@ -5,12 +5,14 @@ A quadrature square wave generator using an STM32F103C8T6 microcontroller that g
 ## Features
 
 - **Quadrature Output Generation**: Uses coupled hardware timers (TIM1 and TIM2) to generate square waves with 90-degree phase shift
-- **Adjustable Frequency**: Potentiometer control allows frequency adjustment between 1Hz and 100kHz
+- **Extended Frequency Range**: Potentiometer control allows frequency adjustment between 1Hz and 100kHz (restored and enhanced)
+- **Dynamic Timer Optimization**: Automatic prescaler calculation ensures optimal resolution across the entire frequency range
 - **Button Control**: Enable/disable buttons for output control with debouncing
 - **Status LED**: Visual indication of output state
-- **UART Communication**: Real-time status reporting via serial interface
+- **UART Communication**: Real-time status reporting via serial interface with frequency validation
 - **50% Duty Cycle**: Maintains consistent duty cycle across frequency range
 - **Hardware-based PWM**: Uses STM32F103 hardware timers for precise timing
+- **Robust Design**: Input validation and error handling for reliable operation
 
 ## Hardware Requirements
 

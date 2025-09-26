@@ -39,6 +39,7 @@ static void MX_USART2_UART_Init(void);
 static void Update_Frequency(uint32_t frequency);
 static uint32_t Map_ADC_to_Frequency(uint16_t adc_val);
 static void Send_Status_UART(void);
+static void Send_Debug_Info(uint32_t frequency, uint32_t prescaler, uint32_t period);
 
 /**
   * @brief  The application entry point.
@@ -73,6 +74,17 @@ int main(void)
 
   /* Initialize timers with default frequency */
   Update_Frequency(current_frequency);
+
+  /* Validate frequency mapping at key points */
+  char test_msg[150];
+  uint32_t test_freq_min = Map_ADC_to_Frequency(0);      // Should be 1Hz
+  uint32_t test_freq_mid = Map_ADC_to_Frequency(2048);   // Should be ~50kHz
+  uint32_t test_freq_max = Map_ADC_to_Frequency(4095);   // Should be 100kHz
+  
+  snprintf(test_msg, sizeof(test_msg), 
+           "Freq mapping test - Min: %luHz, Mid: %luHz, Max: %luHz\r\n",
+           test_freq_min, test_freq_mid, test_freq_max);
+  HAL_UART_Transmit(&huart2, (uint8_t*)test_msg, strlen(test_msg), HAL_MAX_DELAY);
 
   /* Infinite loop */
   while (1)
@@ -479,6 +491,9 @@ static void Update_Frequency(uint32_t frequency)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
   }
+  
+  // Send debug info for frequency changes (uncomment for debugging)
+  // Send_Debug_Info(frequency, prescaler, period);
 }
 
 /**
@@ -503,6 +518,23 @@ static void Send_Status_UART(void)
   snprintf(buffer, sizeof(buffer), 
            "ADC: %d, Freq: %luHz, Output: %s\r\n", 
            adc_value, current_frequency, output_enabled ? "ON" : "OFF");
+  HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+}
+
+/**
+  * @brief Send debug timing information over UART
+  * @param frequency: Current frequency setting
+  * @param prescaler: Timer prescaler value
+  * @param period: Timer period value
+  * @retval None
+  */
+static void Send_Debug_Info(uint32_t frequency, uint32_t prescaler, uint32_t period)
+{
+  char buffer[150];
+  uint32_t actual_freq = 72000000 / ((prescaler + 1) * (period + 1));
+  snprintf(buffer, sizeof(buffer), 
+           "Target: %luHz, Actual: %luHz, Prescaler: %lu, Period: %lu\r\n", 
+           frequency, actual_freq, prescaler, period);
   HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
