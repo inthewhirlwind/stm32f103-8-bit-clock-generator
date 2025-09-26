@@ -71,6 +71,9 @@ int main(void)
   char msg[] = "STM32F103 Quadrature Generator v1.0\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 
+  /* Initialize timers with default frequency */
+  Update_Frequency(current_frequency);
+
   /* Infinite loop */
   while (1)
   {
@@ -389,6 +392,17 @@ static void MX_GPIO_Init(void)
   * @brief Update timer frequencies for quadrature output
   * @param frequency: Target frequency in Hz (1Hz - 100kHz)
   * @retval None
+  * 
+  * This function configures two timers (TIM1 and TIM2) to generate quadrature
+  * output signals:
+  * - TIM1 generates channels A & B (PA8, PA9)
+  * - TIM2 generates channels C & D (PA10, PA11) with 90° phase lead
+  * 
+  * Quadrature encoding provides directional information and higher resolution
+  * for rotary encoders and motor control applications.
+  * 
+  * The function dynamically calculates prescaler values to maintain optimal
+  * timer resolution across the wide frequency range (1Hz - 100kHz).
   */
 static void Update_Frequency(uint32_t frequency)
 {
@@ -397,9 +411,13 @@ static void Update_Frequency(uint32_t frequency)
   uint32_t period;
   uint32_t pulse;
   
+  // Validate frequency range
+  if (frequency < FREQ_MIN_HZ) frequency = FREQ_MIN_HZ;
+  if (frequency > FREQ_MAX_HZ) frequency = FREQ_MAX_HZ;
+  
   // Calculate optimal prescaler and period for the target frequency
   // We want: timer_clock / ((prescaler + 1) * (period + 1)) = frequency
-  // Choose prescaler to keep period in a reasonable range (100-65535)
+  // Choose prescaler to keep period in a reasonable range (100-65535) for accuracy
   
   for (prescaler = 0; prescaler < 65536; prescaler++)
   {
@@ -421,7 +439,7 @@ static void Update_Frequency(uint32_t frequency)
   
   pulse = period / 2;  // 50% duty cycle
   
-  // Stop timers
+  // Stop all PWM outputs before reconfiguration
   HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
@@ -431,22 +449,22 @@ static void Update_Frequency(uint32_t frequency)
   __HAL_TIM_SET_COUNTER(&htim1, 0);
   __HAL_TIM_SET_COUNTER(&htim2, 0);
   
-  // Update TIM1 configuration
+  // Update TIM1 configuration (channels A & B)
   __HAL_TIM_SET_PRESCALER(&htim1, prescaler);
   __HAL_TIM_SET_AUTORELOAD(&htim1, period);
-  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);
-  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pulse);
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);    // Channel A
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, pulse);    // Channel B (same phase as A)
   
-  // Update TIM2 configuration with same timing
+  // Update TIM2 configuration (channels C & D) with same timing parameters
   __HAL_TIM_SET_PRESCALER(&htim2, prescaler);
   __HAL_TIM_SET_AUTORELOAD(&htim2, period);
-  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pulse);
-  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pulse);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pulse);    // Channel C
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pulse);    // Channel D (same phase as C)
   
   // Restart timers if output is enabled
   if (output_enabled)
   {
-    // Reset both timer counters to sync them
+    // Reset both timer counters to ensure synchronization
     __HAL_TIM_SET_COUNTER(&htim1, 0);
     __HAL_TIM_SET_COUNTER(&htim2, 0);
     
@@ -454,8 +472,9 @@ static void Update_Frequency(uint32_t frequency)
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
     
-    // Start TIM2 (channels C & D) with 90-degree phase offset
-    // Set TIM2 counter to 25% of period for 90-degree lead
+    // Start TIM2 (channels C & D) with 90-degree phase lead
+    // Setting counter to 25% of period creates 90° phase advance
+    // This means C & D will lead A & B by 90 degrees (quarter cycle)
     __HAL_TIM_SET_COUNTER(&htim2, period / 4);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
