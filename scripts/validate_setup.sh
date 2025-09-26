@@ -16,9 +16,9 @@ echo ""
 
 echo "Quadrature Outputs:"
 echo "  ☐ PA8  (TIM1_CH1) - Quadrature Output A"
-echo "  ☐ PA9  (TIM1_CH2) - Quadrature Output B"
-echo "  ☐ PA10 (TIM2_CH3) - Quadrature Output C (90° shifted)"
-echo "  ☐ PA11 (TIM2_CH4) - Quadrature Output D (90° shifted)"
+echo "  ☐ PA9  (TIM1_CH2) - Quadrature Output B (inverted from A)"
+echo "  ☐ PA10 (TIM2_CH3) - Quadrature Output C (90° shifted from A)"
+echo "  ☐ PA11 (TIM2_CH4) - Quadrature Output D (inverted from C, 90° shifted)"
 echo ""
 
 echo "User Interface:"
