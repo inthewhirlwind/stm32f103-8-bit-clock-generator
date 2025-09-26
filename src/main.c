@@ -76,14 +76,15 @@ int main(void)
   Update_Frequency(current_frequency);
 
   /* Validate frequency mapping at key points */
-  char test_msg[150];
+  char test_msg[200];
   uint32_t test_freq_min = Map_ADC_to_Frequency(0);      // Should be 1Hz
-  uint32_t test_freq_mid = Map_ADC_to_Frequency(2048);   // Should be ~50kHz
+  uint32_t test_freq_20pct = Map_ADC_to_Frequency(819);  // Should be 100Hz (20% boundary)
+  uint32_t test_freq_mid = Map_ADC_to_Frequency(2048);   // Should be ~37kHz
   uint32_t test_freq_max = Map_ADC_to_Frequency(4095);   // Should be 100kHz
   
   snprintf(test_msg, sizeof(test_msg), 
-           "Freq mapping test - Min: %luHz, Mid: %luHz, Max: %luHz\r\n",
-           test_freq_min, test_freq_mid, test_freq_max);
+           "Freq mapping - Min: %luHz, 20%%: %luHz, Mid: %luHz, Max: %luHz\r\n",
+           test_freq_min, test_freq_20pct, test_freq_mid, test_freq_max);
   HAL_UART_Transmit(&huart2, (uint8_t*)test_msg, strlen(test_msg), HAL_MAX_DELAY);
 
   /* Infinite loop */
@@ -504,12 +505,25 @@ static void Update_Frequency(uint32_t frequency)
   * @brief Map ADC value to frequency range
   * @param adc_val: ADC reading (0-4095)
   * @retval Mapped frequency in Hz (1Hz - 100kHz)
+  * 
+  * Implements segmented frequency mapping:
+  * - First 20% of potentiometer input (ADC 0-819) linearly scales from 1Hz to 100Hz
+  * - Remaining 80% of input (ADC 820-4095) linearly scales from 100Hz to 100kHz
   */
 static uint32_t Map_ADC_to_Frequency(uint16_t adc_val)
 {
-  // Map ADC value (0-4095) to frequency range (1Hz-100kHz)
-  uint32_t freq = FREQ_MIN_HZ + ((uint32_t)(adc_val) * (FREQ_MAX_HZ - FREQ_MIN_HZ)) / ADC_MAX_VALUE;
-  return freq;
+  // Calculate 20% boundary point
+  uint16_t twenty_percent_point = (ADC_MAX_VALUE * 20) / 100; // 819
+  
+  if (adc_val <= twenty_percent_point) {
+    // First 20%: Linear scale from 1Hz to 100Hz
+    return FREQ_MIN_HZ + ((uint32_t)adc_val * (100 - FREQ_MIN_HZ)) / twenty_percent_point;
+  } else {
+    // Remaining 80%: Linear scale from 100Hz to 100kHz
+    uint16_t remaining_adc = adc_val - twenty_percent_point;
+    uint16_t remaining_adc_range = ADC_MAX_VALUE - twenty_percent_point;
+    return 100 + ((uint32_t)remaining_adc * (FREQ_MAX_HZ - 100)) / remaining_adc_range;
+  }
 }
 
 /**
